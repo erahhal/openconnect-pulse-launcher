@@ -21,10 +21,10 @@ route
 
 It can also be used on Nix using the included flake.nix file.
 
-Add the following to your flake.nix:
+Add the following to the `inputs` section of your flake.nix:
 
 ```
-    openconnect-pulse-launcher.url = "path:flakes/openconnect-pulse-launcher";
+    openconnect-pulse-launcher.url = "github:erahhal/openconnect-pulse-launcher";
 ```
 
 And add the following package somewhere in your config:

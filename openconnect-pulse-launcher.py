@@ -42,6 +42,7 @@ class OpenconnectPulseLauncher:
         sys.exit(0)
 
     def init(self):
+        self.is_root = os.geteuid() == 0
         self.chrome_profile_dir = os.path.join(xdg_config_home(), 'chromedriver', 'pulsevpn');
         if not os.path.exists(self.chrome_profile_dir):
             os.makedirs(self.chrome_profile_dir)
@@ -64,7 +65,7 @@ class OpenconnectPulseLauncher:
         # Expiry is set to Session
         return dsid is not None and 'value' in dsid
 
-    def connect(self, hostname):
+    def connect(self, hostname, debug=False, script=None):
         self.hostname = hostname
 
         vpn_url = self.hostname+'/emp'
@@ -86,7 +87,17 @@ class OpenconnectPulseLauncher:
                 ##    Short packet received (2 bytes)
                 ##    Unrecoverable I/O error; exiting.
                 # p = subprocess.run(['sudo', 'openconnect', '--no-dtls', '-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])
-                p = subprocess.run(['sudo', 'openconnect', '-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])
+                command_line = ['sudo', 'openconnect']
+                if debug == True:
+                    command_line.extend(['-v', '-v', '-v'])
+                if script is not None:
+                    command_line.extend(['-s', script])
+                command_line.extend(['-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])
+                if debug == True:
+                    print('Command line:')
+                    print('    {}'.format(' '.join(command_line)))
+                    print('')
+                p = subprocess.run(command_line)
 
                 returncode = p.returncode
 
@@ -140,19 +151,29 @@ def main(argv):
     hostname = ''
 
     try:
-        opts, args = getopt.getopt(argv, '')
+        opts, args = getopt.getopt(argv, 'hds:', ['help', 'debug', 'script='])
     except getopt.GetoptError:
         print(help_message)
         sys.exit(2)
     if len(args) != 1:
         print(help_message)
         sys.exit(2)
-    for arg in args:
-        hostname = arg
+    debug = False
+    script = None
+    for o, a in opts:
+        if o in ('-h', '--help'):
+            print(help_message)
+            sys.exit();
+        elif o in ('-d', '--debug'):
+            debug = True
+        elif o in ('-s', '--script'):
+            if len(a):
+                script = a
+    hostname = args[0]
 
     launcher = OpenconnectPulseLauncher()
     launcher.init()
-    launcher.connect(hostname)
+    launcher.connect(hostname, debug=debug, script=script)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

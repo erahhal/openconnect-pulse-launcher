@@ -89,7 +89,7 @@ class OpenconnectPulseLauncher:
                 # p = subprocess.run(['sudo', 'openconnect', '--no-dtls', '-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])
                 command_line = ['sudo', 'openconnect']
                 if debug == True:
-                    command_line.extend(['-v', '-v', '-v'])
+                    command_line.extend(['-vvvv'])
                 if script is not None:
                     command_line.extend(['-s', script])
                 command_line.extend(['-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])

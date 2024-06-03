@@ -114,7 +114,7 @@ class OpenconnectPulseLauncher:
                   stdout=subprocess.PIPE
                 )
                 output = subprocess.check_output(
-                  ['awk', '-F', ' *|:', '/inet addr/{print $4}'],
+                  ['awk', '-F', ' *|:', '/inet /{print $3}'],
                   stdin=ps.stdout
                 )
                 ps.wait()

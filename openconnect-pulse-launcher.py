@@ -125,7 +125,6 @@ class OpenconnectPulseLauncher:
                 signal.pause()
             else:
                 returncode = 0
-                print(chromedriver_path)
                 service = Service(executable_path=chromedriver_path)
                 options = webdriver.ChromeOptions()
                 options.binary_location = chromium_path

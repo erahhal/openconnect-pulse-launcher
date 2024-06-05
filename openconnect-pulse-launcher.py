@@ -19,7 +19,6 @@ from xdg_base_dirs import (
 )
 
 script_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-chromedriver_path = shutil.which('chromedriver')
 
 class OpenconnectPulseLauncher:
 
@@ -65,7 +64,7 @@ class OpenconnectPulseLauncher:
         # Expiry is set to Session
         return dsid is not None and 'value' in dsid
 
-    def connect(self, hostname, debug=False, script=None):
+    def connect(self, hostname, chromedriver_path, chromium_path, debug=False, script=None):
         self.hostname = hostname
 
         vpn_url = self.hostname+'/emp'
@@ -126,9 +125,13 @@ class OpenconnectPulseLauncher:
                 signal.pause()
             else:
                 returncode = 0
+                print(chromedriver_path)
                 service = Service(executable_path=chromedriver_path)
                 options = webdriver.ChromeOptions()
+                options.binary_location = chromium_path
                 options.add_argument('--window-size=800,900')
+                # options.add_argument('--remote-debugging-pipe')
+                # options.add_argument('--remote-debugging-port=9222')
                 options.add_argument('user-data-dir=' + self.chrome_profile_dir)
 
                 logging.info('Starting browser.')
@@ -147,11 +150,13 @@ class OpenconnectPulseLauncher:
 
 def main(argv):
     script_name = os.path.basename(__file__)
+    chromedriver_path = shutil.which('chromedriver')
+    chromium_path = shutil.which('chromium')
     help_message = '{} <hostname>'.format(script_name)
     hostname = ''
 
     try:
-        opts, args = getopt.getopt(argv, 'hds:', ['help', 'debug', 'script='])
+        opts, args = getopt.getopt(argv, 'hds:c:', ['help', 'debug', 'script=', 'chromedriver-path'])
     except getopt.GetoptError:
         print(help_message)
         sys.exit(2)
@@ -169,11 +174,14 @@ def main(argv):
         elif o in ('-s', '--script'):
             if len(a):
                 script = a
+        elif o in ('-c', '--chromedriver-path'):
+            if len(a):
+                chromedriver_path = a
     hostname = args[0]
 
     launcher = OpenconnectPulseLauncher()
     launcher.init()
-    launcher.connect(hostname, debug=debug, script=script)
+    launcher.connect(hostname, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

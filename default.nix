@@ -2,6 +2,7 @@
 let
   runtime-paths = with pkgs; lib.makeBinPath [
     chromedriver
+    chromium
     gawk
     inetutils
     nettools

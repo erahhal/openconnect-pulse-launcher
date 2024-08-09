@@ -32,3 +32,13 @@ And add the following package somewhere in your config:
 ```
     inputs.openconnect-pulse-launcher.packages."${pkgs.system}".openconnect-pulse-launcher
 ```
+
+## Adding a password manager (e.g. bitwarden)
+
+* Launch chromium manually (user data dir must be full path, no ~/)
+
+```
+    chromium --user-data-dir=/home/<username>/.config/chromedriver/pulsevpn
+```
+
+* Install bitwarden extension and setup

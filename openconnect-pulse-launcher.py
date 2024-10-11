@@ -150,7 +150,7 @@ class OpenconnectPulseLauncher:
 def main(argv):
     script_name = os.path.basename(__file__)
     chromedriver_path = shutil.which('chromedriver')
-    chromium_path = shutil.which('chromium')
+    chromium_path = shutil.which('chromium') or shutil.which('google-chrome')
     help_message = '{} <hostname>'.format(script_name)
     hostname = ''
 

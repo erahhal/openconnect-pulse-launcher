@@ -39,7 +39,7 @@ class OpenconnectPulseLauncher:
         subprocess.run(['sudo', 'route', 'del', vpn_ip])
         sys.exit(0)
 
-    def init(self):
+    def __init__(self):
         self.is_root = os.geteuid() == 0
         self.chrome_profile_dir = os.path.join(xdg_config_home(), 'chromedriver', 'pulsevpn')
         if not os.path.exists(self.chrome_profile_dir):
@@ -176,7 +176,6 @@ def main(argv):
     vpn_url = args[0]
 
     launcher = OpenconnectPulseLauncher()
-    launcher.init()
     launcher.connect(vpn_url, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script)
 
 if __name__ == "__main__":

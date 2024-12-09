@@ -3,7 +3,7 @@ Openconnect Pulse Launcher
 
 ## Usage
 
-`./openconnect-pulse-launcher.py <hostname>`
+`./openconnect-pulse-launcher.py <vpn_url>` where `<vpn_url>` is something like "https://hostname/emp"
 
 ## Installation
 

@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -64,10 +65,9 @@ class OpenconnectPulseLauncher:
         # Expiry is set to Session
         return dsid is not None and 'value' in dsid
 
-    def connect(self, hostname, chromedriver_path, chromium_path, debug=False, script=None):
-        self.hostname = hostname
+    def connect(self, vpn_url, chromedriver_path, chromium_path, debug=False, script=None):
+        self.hostname = urllib.parse.urlparse(vpn_url).hostname
 
-        vpn_url = self.hostname+'/emp'
         dsid = None
         returncode = 0
         while True:
@@ -137,7 +137,7 @@ class OpenconnectPulseLauncher:
                 driver = webdriver.Chrome(service=service, options=options)
 
                 wait = WebDriverWait(driver, 60)
-                driver.get('https://'+vpn_url)
+                driver.get(vpn_url)
                 dsid = wait.until(lambda driver: driver.get_cookie('DSID'))
                 driver.quit()
                 if self.is_dsid_valid(dsid):
@@ -151,8 +151,7 @@ def main(argv):
     script_name = os.path.basename(__file__)
     chromedriver_path = shutil.which('chromedriver')
     chromium_path = shutil.which('chromium') or shutil.which('google-chrome')
-    help_message = '{} <hostname>'.format(script_name)
-    hostname = ''
+    help_message = '{} <vpn_url>'.format(script_name)
 
     try:
         opts, args = getopt.getopt(argv, 'hds:c:', ['help', 'debug', 'script=', 'chromedriver-path'])
@@ -176,11 +175,11 @@ def main(argv):
         elif o in ('-c', '--chromedriver-path'):
             if len(a):
                 chromedriver_path = a
-    hostname = args[0]
+    vpn_url = args[0]
 
     launcher = OpenconnectPulseLauncher()
     launcher.init()
-    launcher.connect(hostname, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script)
+    launcher.connect(vpn_url, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

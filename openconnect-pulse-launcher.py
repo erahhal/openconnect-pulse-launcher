@@ -10,13 +10,12 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
-from xdg_base_dirs import (
-    xdg_config_home,
-)
+from xdg_base_dirs import xdg_config_home
 
 script_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -42,14 +41,14 @@ class OpenconnectPulseLauncher:
 
     def init(self):
         self.is_root = os.geteuid() == 0
-        self.chrome_profile_dir = os.path.join(xdg_config_home(), 'chromedriver', 'pulsevpn');
+        self.chrome_profile_dir = os.path.join(xdg_config_home(), 'chromedriver', 'pulsevpn')
         if not os.path.exists(self.chrome_profile_dir):
             os.makedirs(self.chrome_profile_dir)
-        config_dir = os.path.join(xdg_config_home(), 'openconnect-pulsevpn');
+        config_dir = os.path.join(xdg_config_home(), 'openconnect-pulsevpn')
         if not os.path.exists(config_dir):
             os.makedirs(config_dir)
 
-        self.cookie_file = os.path.join(config_dir, 'cookie.txt');
+        self.cookie_file = os.path.join(config_dir, 'cookie.txt')
         cookie = None
         if os.path.isfile(self.cookie_file):
           cookie_file_handle = open(self.cookie_file, 'r')
@@ -58,16 +57,15 @@ class OpenconnectPulseLauncher:
 
         self.vpn_gateway_ip = None
 
-        signal.signal(signal.SIGINT, lambda sig, frame: self.signal_handler(sig, frame))
+        signal.signal(signal.SIGINT, self.signal_handler)
 
     def is_dsid_valid(self, dsid):
         # Expiry is set to Session
         return dsid is not None and 'value' in dsid
 
-    def connect(self, hostname, chromedriver_path, chromium_path, debug=False, script=None):
-        self.hostname = hostname
+    def connect(self, vpn_url, chromedriver_path, chromium_path, debug=False, script=None):
+        self.hostname = urllib.parse.urlparse(vpn_url).hostname
 
-        vpn_url = self.hostname+'/emp'
         dsid = None
         returncode = 0
         while True:
@@ -87,12 +85,12 @@ class OpenconnectPulseLauncher:
                 ##    Unrecoverable I/O error; exiting.
                 # p = subprocess.run(['sudo', 'openconnect', '--no-dtls', '-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])
                 command_line = ['sudo', 'openconnect']
-                if debug == True:
+                if debug:
                     command_line.extend(['-vvvv'])
                 if script is not None:
                     command_line.extend(['-s', script])
                 command_line.extend(['-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])
-                if debug == True:
+                if debug:
                     print('Command line:')
                     print('    {}'.format(' '.join(command_line)))
                     print('')
@@ -137,7 +135,7 @@ class OpenconnectPulseLauncher:
                 driver = webdriver.Chrome(service=service, options=options)
 
                 wait = WebDriverWait(driver, 60)
-                driver.get('https://'+vpn_url)
+                driver.get(vpn_url)
                 dsid = wait.until(lambda driver: driver.get_cookie('DSID'))
                 driver.quit()
                 if self.is_dsid_valid(dsid):
@@ -151,8 +149,7 @@ def main(argv):
     script_name = os.path.basename(__file__)
     chromedriver_path = shutil.which('chromedriver')
     chromium_path = shutil.which('chromium') or shutil.which('google-chrome')
-    help_message = '{} <hostname>'.format(script_name)
-    hostname = ''
+    help_message = '{} <vpn_url>'.format(script_name)
 
     try:
         opts, args = getopt.getopt(argv, 'hds:c:', ['help', 'debug', 'script=', 'chromedriver-path'])
@@ -167,7 +164,7 @@ def main(argv):
     for o, a in opts:
         if o in ('-h', '--help'):
             print(help_message)
-            sys.exit();
+            sys.exit()
         elif o in ('-d', '--debug'):
             debug = True
         elif o in ('-s', '--script'):
@@ -176,11 +173,11 @@ def main(argv):
         elif o in ('-c', '--chromedriver-path'):
             if len(a):
                 chromedriver_path = a
-    hostname = args[0]
+    vpn_url = args[0]
 
     launcher = OpenconnectPulseLauncher()
     launcher.init()
-    launcher.connect(hostname, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script)
+    launcher.connect(vpn_url, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script)
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+    main(sys.argv[1:])

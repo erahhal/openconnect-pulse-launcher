@@ -134,9 +134,8 @@ class OpenconnectPulseLauncher:
                 logging.info('Starting browser.')
                 driver = webdriver.Chrome(service=service, options=options)
 
-                wait = WebDriverWait(driver, 60)
                 driver.get(vpn_url)
-                dsid = wait.until(lambda driver: driver.get_cookie('DSID'))
+                dsid = WebDriverWait(driver, float('inf')).until(lambda driver: driver.get_cookie('DSID'))
                 driver.quit()
                 if self.is_dsid_valid(dsid):
                     cookie_file_handle = open(self.cookie_file, 'w')

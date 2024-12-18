@@ -21,7 +21,7 @@ script_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 
 class OpenconnectPulseLauncher:
 
-    def signal_handler(self, sig, frame):
+    def signal_handler(self, _sig, _frame):
         subprocess.run(['sudo', 'route', 'del', 'default', 'gw', self.vpn_gateway_ip])
         while 'openconnect' in (i.name() for i in psutil.process_iter()):
             subprocess.run(['sudo', 'pkill', 'openconnect'])

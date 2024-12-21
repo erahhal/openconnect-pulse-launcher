@@ -44,16 +44,6 @@ class OpenconnectPulseLauncher:
         self.chrome_profile_dir = os.path.join(xdg_config_home(), 'chromedriver', 'pulsevpn')
         if not os.path.exists(self.chrome_profile_dir):
             os.makedirs(self.chrome_profile_dir)
-        config_dir = os.path.join(xdg_config_home(), 'openconnect-pulsevpn')
-        if not os.path.exists(config_dir):
-            os.makedirs(config_dir)
-
-        self.cookie_file = os.path.join(config_dir, 'cookie.txt')
-        cookie = None
-        if os.path.isfile(self.cookie_file):
-          cookie_file_handle = open(self.cookie_file, 'r')
-          cookie = cookie_file_handle.read()
-          cookie_file_handle.close()
 
         self.vpn_gateway_ip = None
 
@@ -137,11 +127,6 @@ class OpenconnectPulseLauncher:
                 driver.get(vpn_url)
                 dsid = WebDriverWait(driver, float('inf')).until(lambda driver: driver.get_cookie('DSID'))
                 driver.quit()
-                if self.is_dsid_valid(dsid):
-                    cookie_file_handle = open(self.cookie_file, 'w')
-                    cookie = cookie_file_handle.write(dsid['value'])
-                    cookie_file_handle.close()
-
                 logging.info('DSID cookie: %s', dsid)
 
 def main(argv):

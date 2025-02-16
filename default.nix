@@ -24,6 +24,7 @@ pkgs.stdenv.mkDerivation {
     (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [
       selenium
       psutil
+      pycookiecheat
       xdg-base-dirs
     ]))
   ];

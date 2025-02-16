@@ -11,7 +11,9 @@ import subprocess
 import sys
 import time
 import urllib
+import webbrowser
 
+from pycookiecheat import BrowserType, get_cookies
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
@@ -49,17 +51,29 @@ class OpenconnectPulseLauncher:
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
-    def is_dsid_valid(self, dsid):
+    def is_dsid_valid(self, dsid, dsid_old):
         # Expiry is set to Session
-        return dsid is not None and 'value' in dsid
+        return dsid is not None and 'value' in dsid and (dsid_old is None or dsid_old['value'] != dsid['value'])
+
+    def get_dsid_cookie(self, url):
+        cookies = get_cookies(url, browser=BrowserType.CHROMIUM)
+        print(cookies)
+        if 'DSID' in cookies:
+            dsid = { 'value': cookies['DSID'] }
+        else:
+            dsid = None
+        print(dsid)
+        return dsid
 
     def connect(self, vpn_url, chromedriver_path, chromium_path, debug=False, script=None):
         self.hostname = urllib.parse.urlparse(vpn_url).hostname
 
+        dsid_old = None
         dsid = None
         returncode = 0
+        loopCount = 0
         while True:
-            if self.is_dsid_valid(dsid) and returncode != 2:
+            if self.is_dsid_valid(dsid, dsid_old) and returncode != 2:
                 logging.info('Launching openconnect.')
 
                 ## Run in background
@@ -88,6 +102,12 @@ class OpenconnectPulseLauncher:
 
                 returncode = p.returncode
 
+                if returncode == 2:
+                    # Cookie rejected
+                    dsid_old = { 'value': dsid['value'] }
+                    dsid = None
+                    continue
+
                 ## Get tun0 IP and set as default GW (vpnc-script doesn't do this for some reason)
                 ## Probably due to something like this:
                 ## https://github.com/dlenski/openconnect/issues/125#issuecomment-426032102
@@ -111,23 +131,32 @@ class OpenconnectPulseLauncher:
 
                 # Wait for ctrl-c
                 signal.pause()
-            else:
+            elif loopCount == 0:
+                print('opening browser')
+                loopCount = 1
                 returncode = 0
-                service = Service(executable_path=chromedriver_path)
-                options = webdriver.ChromeOptions()
-                options.binary_location = chromium_path
-                options.add_argument('--window-size=800,900')
-                # options.add_argument('--remote-debugging-pipe')
-                # options.add_argument('--remote-debugging-port=9222')
-                options.add_argument('user-data-dir=' + self.chrome_profile_dir)
-
-                logging.info('Starting browser.')
-                driver = webdriver.Chrome(service=service, options=options)
-
-                driver.get(vpn_url)
-                dsid = WebDriverWait(driver, float('inf')).until(lambda driver: driver.get_cookie('DSID'))
-                driver.quit()
+                chromium = webbrowser.get('chromium')
+                chromium.open_new_tab(vpn_url)
+                # service = Service(executable_path=chromedriver_path)
+                # options = webdriver.ChromeOptions()
+                # options.binary_location = chromium_path
+                # options.add_argument('--window-size=800,900')
+                # # options.add_argument('--remote-debugging-pipe')
+                # # options.add_argument('--remote-debugging-port=9222')
+                # options.add_argument('user-data-dir=' + self.chrome_profile_dir)
+                #
+                # logging.info('Starting browser.')
+                # driver = webdriver.Chrome(service=service, options=options)
+                #
+                # driver.get(vpn_url)
+                dsid = self.get_dsid_cookie(vpn_url)
+                # dsid = WebDriverWait(driver, float('inf')).until(lambda driver: driver.get_cookie('DSID'))
+                # driver.quit()
                 logging.info('DSID cookie: %s', dsid)
+            else:
+                print("WAITING FOR COOKIE")
+                time.sleep(1)
+                dsid = self.get_dsid_cookie(vpn_url)
 
 def main(argv):
     script_name = os.path.basename(__file__)

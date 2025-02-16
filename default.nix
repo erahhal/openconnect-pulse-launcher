@@ -29,8 +29,10 @@ pkgs.stdenv.mkDerivation {
     (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [
       netifaces
       psutil
+      pycookiecheat
       selenium
       xdg-base-dirs
+      netifaces
     ]))
   ];
 

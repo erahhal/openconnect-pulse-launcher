@@ -32,6 +32,6 @@ pkgs.stdenv.mkDerivation {
     install -Dm755 ${./openconnect-pulse-launcher.py} $out/bin/openconnect-pulse-launcher
 
     wrapProgram $out/bin/openconnect-pulse-launcher \
-      --suffix PATH : ${runtime-paths}
+      --prefix PATH : ${runtime-paths}
   '';
 }

@@ -1,12 +1,17 @@
 { lib, makeWrapper, pkgs, ... }:
 let
+  openconnect-patched = pkgs.openconnect.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [
+      ./patched/pulse.patch
+    ];
+  });
   runtime-paths = with pkgs; lib.makeBinPath [
     chromedriver
     chromium
     gawk
     inetutils
     nettools
-    openconnect
+    openconnect-patched
     procps
   ];
 in
@@ -22,8 +27,9 @@ pkgs.stdenv.mkDerivation {
   propagatedBuildInputs = with pkgs; [
     # Python dependencies
     (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [
-      selenium
+      netifaces
       psutil
+      selenium
       xdg-base-dirs
     ]))
   ];

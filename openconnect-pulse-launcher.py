@@ -3,6 +3,7 @@
 import getopt
 import inspect
 import logging
+import netifaces
 import os
 import psutil
 import signal
@@ -96,16 +97,8 @@ class OpenconnectPulseLauncher:
 
                 ## sleep to make sure tun0 is available
                 time.sleep(3)
-                ps = subprocess.Popen(
-                  ['ifconfig', 'tun0'],
-                  stdout=subprocess.PIPE
-                )
-                output = subprocess.check_output(
-                  ['awk', '-F', ' *|:', '/inet /{print $3}'],
-                  stdin=ps.stdout
-                )
-                ps.wait()
-                self.vpn_gateway_ip = output.decode().rstrip()
+                addresses = netifaces.ifaddresses('tun0')
+                self.vpn_gateway_ip = addresses[netifaces.AF_INET][0]['addr']
                 print('VPN IP: '+self.vpn_gateway_ip)
                 p = subprocess.run(['sudo', 'route', 'add', 'default', 'gw', self.vpn_gateway_ip])
 

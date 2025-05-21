@@ -32,7 +32,6 @@ pkgs.stdenv.mkDerivation {
       pycookiecheat
       selenium
       xdg-base-dirs
-      netifaces
     ]))
   ];
 

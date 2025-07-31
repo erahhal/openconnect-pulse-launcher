@@ -23,7 +23,12 @@ It can also be used on Nix using the included `flake.nix` file.
 Add the following to the `inputs` section of your flake.nix:
 
 ```nix
-    openconnect-pulse-launcher.url = "github:erahhal/openconnect-pulse-launcher";
+    openconnect-pulse-launcher = {
+      url = "github:erahhal/openconnect-pulse-launcher";
+      ## Only add this if you want openconnect-pulse-launcher to use the same version of
+      ## chrmomium as the one installed on your system.
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 ```
 
 And add the following package somewhere in your config:
@@ -41,3 +46,4 @@ And add the following package somewhere in your config:
 ```
 
 * Install the Bitwarden extension and setup
+* WARNING: make sure to use "inputs.nixpkgs.follows" as shown above, or else different chromium versions could be used, corrupting the user-data-dir.

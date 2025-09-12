@@ -54,7 +54,7 @@ class OpenconnectPulseLauncher:
         # Expiry is set to Session
         return dsid is not None and 'value' in dsid
 
-    def connect(self, vpn_url, chromedriver_path, chromium_path, debug=False, script=None):
+    def connect(self, vpn_url, chromedriver_path, chromium_path, debug=False, script=None, post=None):
         self.hostname = urllib.parse.urlparse(vpn_url).hostname
 
         dsid = None
@@ -102,6 +102,9 @@ class OpenconnectPulseLauncher:
                 print('VPN IP: '+self.vpn_gateway_ip)
                 p = subprocess.run(['sudo', 'route', 'add', 'default', 'gw', self.vpn_gateway_ip])
 
+                if post is not None:
+                    subprocess.run([post])
+
                 # Wait for ctrl-c
                 signal.pause()
             else:
@@ -129,7 +132,7 @@ def main(argv):
     help_message = '{} <vpn_url>'.format(script_name)
 
     try:
-        opts, args = getopt.getopt(argv, 'hds:c:', ['help', 'debug', 'script=', 'chromedriver-path'])
+        opts, args = getopt.getopt(argv, 'hds:p:c:', ['help', 'debug', 'script=', 'post=', 'chromedriver-path'])
     except getopt.GetoptError:
         print(help_message)
         sys.exit(2)
@@ -138,6 +141,7 @@ def main(argv):
         sys.exit(2)
     debug = False
     script = None
+    post = None
     for o, a in opts:
         if o in ('-h', '--help'):
             print(help_message)
@@ -147,13 +151,16 @@ def main(argv):
         elif o in ('-s', '--script'):
             if len(a):
                 script = a
+        elif o in ('-p', '--post'):
+            if len(a):
+                post = a
         elif o in ('-c', '--chromedriver-path'):
             if len(a):
                 chromedriver_path = a
     vpn_url = args[0]
 
     launcher = OpenconnectPulseLauncher()
-    launcher.connect(vpn_url, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script)
+    launcher.connect(vpn_url, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script, post=post)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

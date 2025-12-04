@@ -15,8 +15,7 @@
       openconnect-pulse-launcher = callPackage ./default.nix {
         inherit builtins;
       };
+      default = self.packages.x86_64-linux.openconnect-pulse-launcher;
     };
-
-    defaultPackage.x86_64-linux = self.packages.x86_64-linux.openconnect-pulse-launcher;
   };
 }

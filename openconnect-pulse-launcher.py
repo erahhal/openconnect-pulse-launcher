@@ -16,7 +16,9 @@ import urllib
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium_stealth import stealth
 from xdg_base_dirs import xdg_config_home
+import undetected_chromedriver as uc
 
 script_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -110,15 +112,30 @@ class OpenconnectPulseLauncher:
             else:
                 returncode = 0
                 service = Service(executable_path=chromedriver_path)
-                options = webdriver.ChromeOptions()
-                options.binary_location = chromium_path
-                options.add_argument('--window-size=800,900')
-                # options.add_argument('--remote-debugging-pipe')
-                # options.add_argument('--remote-debugging-port=9222')
-                options.add_argument('user-data-dir=' + self.chrome_profile_dir)
+                user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.140 Safari/537.36"
+                
+                # Use uc.ChromeOptions for better bot detection evasion
+                chrome_options = uc.ChromeOptions()
+                chrome_options.add_argument('--window-size=800,900')
+                chrome_options.add_argument('user-agent={}'.format(user_agent))
+                
+                # When using uc.ChromeOptions with webdriver.Chrome:
+                # - Do not set binary_location (let it find chromium via PATH)
+                # - Do not set user-data-dir (causes profile lock issues)
+                # uc.ChromeOptions expects Chrome to manage its own profile
 
                 logging.info('Starting browser.')
-                driver = webdriver.Chrome(service=service, options=options)
+                driver = webdriver.Chrome(service=service, options=chrome_options)
+                
+                # Apply stealth.js to mask automation indicators
+                stealth(driver,
+                        languages=["en-US", "en"],
+                        vendor="Google Inc.",
+                        platform="Win32",
+                        webgl_vendor="Intel Inc.",
+                        renderer="Intel Iris OpenGL Engine",
+                        fix_hairline=True
+                )
 
                 driver.get(vpn_url)
                 dsid = WebDriverWait(driver, float('inf')).until(lambda driver: driver.get_cookie('DSID'))

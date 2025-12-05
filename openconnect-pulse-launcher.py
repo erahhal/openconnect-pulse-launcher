@@ -119,10 +119,7 @@ class OpenconnectPulseLauncher:
                 chrome_options.add_argument('--window-size=800,900')
                 chrome_options.add_argument('user-agent={}'.format(user_agent))
                 
-                # When using uc.ChromeOptions with webdriver.Chrome:
-                # - Do not set binary_location (let it find chromium via PATH)
-                # - Do not set user-data-dir (causes profile lock issues)
-                # uc.ChromeOptions expects Chrome to manage its own profile
+                chrome_options.add_argument('user-data-dir=' + self.chrome_profile_dir)
 
                 logging.info('Starting browser.')
                 driver = webdriver.Chrome(service=service, options=chrome_options)

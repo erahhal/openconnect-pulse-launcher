@@ -18,7 +18,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 from xdg_base_dirs import xdg_config_home
-import undetected_chromedriver as uc
 
 script_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -112,10 +111,11 @@ class OpenconnectPulseLauncher:
             else:
                 returncode = 0
                 service = Service(executable_path=chromedriver_path)
-                user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.140 Safari/537.36"
-                
-                # Use uc.ChromeOptions for better bot detection evasion
-                chrome_options = uc.ChromeOptions()
+                # https://stackoverflow.com/questions/29916054/change-user-agent-for-selenium-web-driver
+                user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+                user_agent_override = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+
+                chrome_options = webdriver.ChromeOptions()
                 chrome_options.add_argument('--window-size=800,900')
                 chrome_options.add_argument('user-agent={}'.format(user_agent))
                 
@@ -133,8 +133,10 @@ class OpenconnectPulseLauncher:
                         renderer="Intel Iris OpenGL Engine",
                         fix_hairline=True
                 )
-
                 driver.get(vpn_url)
+                driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent":user_agent_override, "platform":"Linux"})
+                driver.get(vpn_url) # must do this a second time to fix occasional rendering issues on startup
+                driver.back()
                 dsid = WebDriverWait(driver, float('inf')).until(lambda driver: driver.get_cookie('DSID'))
                 driver.quit()
                 logging.info('DSID cookie: %s', dsid)

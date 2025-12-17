@@ -70,14 +70,12 @@ class OpenconnectPulseLauncher:
                 ## openconnect is built to already point to a pre-packaged vpnc-script, so no need to specify
                 # p = subprocess.run(['sudo', 'openconnect', '-b', '-C', dsid['value'], '--protocol=pulse', vpn_url, '-s', '${pkgs.unstable.vpnc-scripts}/bin/vpnc-script'])
 
-                ## --no-dtls addresses VPN dying with "ESP detected dead peer", and also "ESP receive error: Message too long" error
+                ## --no-dtls disables ESP/UDP and forces SSL-only mode.
+                ## Required for SIGUSR2 reconnection after suspend/resume to work.
+                ## Pulse ESP reconnect is broken: https://gitlab.com/openconnect/openconnect/-/issues/141
+                ## Also addresses "ESP detected dead peer" and "ESP receive error: Message too long"
                 ## See: https://gitlab.com/openconnect/openconnect/-/issues/647
-                ## Downside: lots of console spam
-                ## Also, seems to die often with this error:
-                ##    Short packet received (2 bytes)
-                ##    Unrecoverable I/O error; exiting.
-                # p = subprocess.run(['sudo', 'openconnect', '--no-dtls', '-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])
-                command_line = ['sudo', 'openconnect']
+                command_line = ['sudo', 'openconnect', '--no-dtls']
                 if debug:
                     command_line.extend(['-vvvv'])
                 if script is not None:

@@ -6,6 +6,7 @@ import logging
 import netifaces
 import os
 import psutil
+import re
 import signal
 import shutil
 import subprocess
@@ -18,7 +19,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 from xdg_base_dirs import xdg_config_home
-import undetected_chromedriver as uc
 
 script_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -70,12 +70,14 @@ class OpenconnectPulseLauncher:
                 ## openconnect is built to already point to a pre-packaged vpnc-script, so no need to specify
                 # p = subprocess.run(['sudo', 'openconnect', '-b', '-C', dsid['value'], '--protocol=pulse', vpn_url, '-s', '${pkgs.unstable.vpnc-scripts}/bin/vpnc-script'])
 
-                ## --no-dtls disables ESP/UDP and forces SSL-only mode.
-                ## Required for SIGUSR2 reconnection after suspend/resume to work.
-                ## Pulse ESP reconnect is broken: https://gitlab.com/openconnect/openconnect/-/issues/141
-                ## Also addresses "ESP detected dead peer" and "ESP receive error: Message too long"
+                ## --no-dtls addresses VPN dying with "ESP detected dead peer", and also "ESP receive error: Message too long" error
                 ## See: https://gitlab.com/openconnect/openconnect/-/issues/647
-                command_line = ['sudo', 'openconnect', '--no-dtls']
+                ## Downside: lots of console spam
+                ## Also, seems to die often with this error:
+                ##    Short packet received (2 bytes)
+                ##    Unrecoverable I/O error; exiting.
+                # p = subprocess.run(['sudo', 'openconnect', '--no-dtls', '-b', '-C', dsid['value'], '--protocol=pulse', vpn_url])
+                command_line = ['sudo', 'openconnect']
                 if debug:
                     command_line.extend(['-vvvv'])
                 if script is not None:
@@ -110,18 +112,26 @@ class OpenconnectPulseLauncher:
             else:
                 returncode = 0
                 service = Service(executable_path=chromedriver_path)
-                user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.140 Safari/537.36"
-                
-                # Use uc.ChromeOptions for better bot detection evasion
-                chrome_options = uc.ChromeOptions()
+
+                # First, start a temporary browser to get the real user agent
+                temp_options = webdriver.ChromeOptions()
+                temp_driver = webdriver.Chrome(service=service, options=temp_options)
+                original_ua = temp_driver.execute_script("return navigator.userAgent")
+                temp_driver.quit()
+                print('Original user agent: ' + original_ua)
+
+                windows_ua = re.sub(r'X11; Linux x86_64', 'Windows NT 10.0; Win64; x64', original_ua)
+                print('Windows user agent: ' + windows_ua)
+
+                # Now start the real browser with the cleaned user agent
+                chrome_options = webdriver.ChromeOptions()
                 chrome_options.add_argument('--window-size=800,900')
-                chrome_options.add_argument('user-agent={}'.format(user_agent))
-                
                 chrome_options.add_argument('user-data-dir=' + self.chrome_profile_dir)
+                chrome_options.add_argument('user-agent={}'.format(windows_ua))
 
                 logging.info('Starting browser.')
                 driver = webdriver.Chrome(service=service, options=chrome_options)
-                
+
                 # Apply stealth.js to mask automation indicators
                 stealth(driver,
                         languages=["en-US", "en"],
@@ -133,6 +143,9 @@ class OpenconnectPulseLauncher:
                 )
 
                 driver.get(vpn_url)
+                driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": original_ua, "platform": "Linux"})
+                driver.get(vpn_url)
+                driver.back()
                 dsid = WebDriverWait(driver, float('inf')).until(lambda driver: driver.get_cookie('DSID'))
                 driver.quit()
                 logging.info('DSID cookie: %s', dsid)

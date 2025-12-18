@@ -27,27 +27,6 @@ let
     doCheck = false; # Skip tests for simplicity
   };
 
-  # Package undetected-chromedriver
-  undetected-chromedriver = pkgs.python3.pkgs.buildPythonPackage rec {
-    pname = "undetected-chromedriver";
-    version = "3.5.5";
-    format = "setuptools";
-
-    src = pkgs.fetchPypi {
-      inherit pname version;
-      hash = "sha256-n5ReFDUAUker4X3jFrz9qFsoSkF3/V8lFnx4ztM7Zew=";
-    };
-
-    propagatedBuildInputs = with pkgs.python3.pkgs; [
-      selenium
-      requests
-      websockets
-      setuptools
-    ];
-
-    doCheck = false; # Skip tests for simplicity
-  };
-
   runtime-paths = with pkgs; lib.makeBinPath [
     chromedriver
     chromium
@@ -74,7 +53,6 @@ pkgs.stdenv.mkDerivation {
       psutil
       selenium
       selenium-stealth
-      undetected-chromedriver
       xdg-base-dirs
     ]))
   ];

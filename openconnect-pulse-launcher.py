@@ -25,7 +25,8 @@ script_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 class OpenconnectPulseLauncher:
 
     def signal_handler(self, _sig, _frame):
-        subprocess.run(['sudo', 'route', 'del', 'default', 'gw', self.vpn_gateway_ip])
+        if not self.no_default_route:
+            subprocess.run(['sudo', 'route', 'del', 'default', 'gw', self.vpn_gateway_ip])
         while 'openconnect' in (i.name() for i in psutil.process_iter()):
             subprocess.run(['sudo', 'pkill', '-SIGINT', 'openconnect'])
         ps = subprocess.Popen(
@@ -49,6 +50,7 @@ class OpenconnectPulseLauncher:
             os.makedirs(self.chrome_profile_dir)
 
         self.vpn_gateway_ip = None
+        self.no_default_route = False
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -56,7 +58,8 @@ class OpenconnectPulseLauncher:
         # Expiry is set to Session
         return dsid is not None and 'value' in dsid
 
-    def connect(self, vpn_url, chromedriver_path, chromium_path, debug=False, script=None, post=None):
+    def connect(self, vpn_url, chromedriver_path, chromium_path, debug=False, script=None, post=None, no_default_route=False):
+        self.no_default_route = no_default_route
         self.hostname = urllib.parse.urlparse(vpn_url).hostname
 
         dsid = None
@@ -102,7 +105,8 @@ class OpenconnectPulseLauncher:
                 addresses = netifaces.ifaddresses('tun0')
                 self.vpn_gateway_ip = addresses[netifaces.AF_INET][0]['addr']
                 print('VPN IP: '+self.vpn_gateway_ip)
-                p = subprocess.run(['sudo', 'route', 'add', 'default', 'gw', self.vpn_gateway_ip])
+                if not no_default_route:
+                    p = subprocess.run(['sudo', 'route', 'add', 'default', 'gw', self.vpn_gateway_ip])
 
                 if post is not None:
                     subprocess.run([post])
@@ -157,7 +161,7 @@ def main(argv):
     help_message = '{} <vpn_url>'.format(script_name)
 
     try:
-        opts, args = getopt.getopt(argv, 'hds:p:c:', ['help', 'debug', 'script=', 'post=', 'chromedriver-path'])
+        opts, args = getopt.getopt(argv, 'hdns:p:c:', ['help', 'debug', 'no-default-route', 'script=', 'post=', 'chromedriver-path'])
     except getopt.GetoptError:
         print(help_message)
         sys.exit(2)
@@ -167,12 +171,15 @@ def main(argv):
     debug = False
     script = None
     post = None
+    no_default_route = False
     for o, a in opts:
         if o in ('-h', '--help'):
             print(help_message)
             sys.exit()
         elif o in ('-d', '--debug'):
             debug = True
+        elif o in ('-n', '--no-default-route'):
+            no_default_route = True
         elif o in ('-s', '--script'):
             if len(a):
                 script = a
@@ -185,7 +192,7 @@ def main(argv):
     vpn_url = args[0]
 
     launcher = OpenconnectPulseLauncher()
-    launcher.connect(vpn_url, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script, post=post)
+    launcher.connect(vpn_url, chromedriver_path=chromedriver_path, chromium_path=chromium_path, debug=debug, script=script, post=post, no_default_route=no_default_route)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
